@@ -1,0 +1,43 @@
+trigger:
+  - release/**
+
+pool:
+  name: Azure Pipelines
+
+variables:
+  - group: Docker Registry
+
+
+stages:
+
+- stage: Build_and_publish_generative_services
+
+  jobs:
+  - job: build_docker_image
+    displayName: Build Docker Image
+    steps:
+    - task: DockerInstaller@0
+      displayName: Docker Installer
+      inputs:
+        dockerVersion: 26.1.1
+        releaseType: stable
+    - task: Bash@3
+      displayName: Generate Docker image
+      inputs:
+        targetType: 'inline'
+        script: |
+          docker-compose build
+
+    - task: Bash@3
+      displayName: Push Docker image
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo docker login
+          docker login ${DOCKER_REGISTRY_URL} --username $DOCKER_REGISTRY_USER --password $DOCKER_REGISTRY_PASSWORD
+
+          docker-compose push
+      env:
+        DOCKER_REGISTRY_URL: $(DOCKER_REGISTRY_URL)
+        DOCKER_REGISTRY_PASSWORD: $(DOCKER_REGISTRY_PASSWORD)
+        DOCKER_REGISTRY_USER: $(DOCKER_REGISTRY_USER)
